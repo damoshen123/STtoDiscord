@@ -1,0 +1,27 @@
+{
+  "name": "ai-proxy-yinpa",
+  "version": "1.0.0",
+  "description": "AI服务代理服务器",
+  "main": "yinpa.js",
+  "scripts": {
+    "start": "node yinpa.js",
+    "dev": "nodemon yinpa.js",
+    "install-browsers": "playwright install chromium",
+     "prepare": "playwright install chromium"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "systeminformation": "^5.21.7",
+    "playwright": "^1.40.0",
+    "@playwright/test": "^1.40.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "type": "module"
+}
