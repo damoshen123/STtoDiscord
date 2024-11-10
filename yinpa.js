@@ -259,7 +259,38 @@ DISpage.on('DISmessage', async (Value) => {
 
         SendTxt="{"+Value["username"]+"}:"+SendTxt
 
-        SendTxt=SendTxt.replace("掷骰子","，这个轮次玩家的骰子是:{{roll:1d6}}")
+        let tixing="已收到消息请稍等大概一分钟";
+
+        if(SendTxt.includes("掷骰子")){
+            // 生成1到6的随机数
+            let roll = Math.floor(Math.random() * 6) + 1;
+
+            // 初始化结果变量
+            let result;
+            let detail;
+
+            // 判断结果
+            if (roll === 1) {
+                result = "失败";
+                detail = "大失败";
+            } else if (roll >= 2 && roll <= 3) {
+                result = "失败";
+                detail = "普通失败";
+            } else if (roll === 4) {
+                result = "成功";
+                detail = "普通成功";
+            } else if (roll === 5) {
+                result = "成功";
+                detail = "良好成功";
+            } else if (roll === 6) {
+                result = "成功";
+                detail = "大成功";
+            }
+            SendTxt=SendTxt.replace("掷骰子",`，这个轮次玩家的骰子是:${roll},结果是${detail}。`)
+            tixing=tixing+`这个轮次玩家的骰子是:${roll},结果是${detail}`;
+        }
+
+        
 
         const send_textarea = STpage.locator('#send_textarea[name="text"]');
         // 使用 fill() 方法输入内容
@@ -285,7 +316,7 @@ DISpage.on('DISmessage', async (Value) => {
 
         }
 
-        let tixing="已收到消息请稍等大概一分钟";
+       
         await   inputMessageInDiscord(DISpage,tixing);
         async function inputMessageInDiscord(page, message) {
            try {
