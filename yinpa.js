@@ -337,6 +337,7 @@ DISpage.on('DISmessage', async (Value) => {
              // 输入每一行，使用Shift+Enter来创建换行
              for (let i = 0; i < lines.length; i++) {
                await page.keyboard.type(lines[i], {delay: 10});
+               await new Promise(resolve => setTimeout(resolve, 100));
                
                // 如果不是最后一行，则输入Shift+Enter
                if (i < lines.length - 1) {
@@ -464,6 +465,7 @@ async function inputMessageInDiscord(page, message) {
 
         for (let i = 0; i < lines.length; i++) {
             await page.keyboard.type(lines[i], {delay: 1});
+            await new Promise(resolve => setTimeout(resolve, 100));
             if (i < lines.length - 1) {
                 await page.keyboard.down('Shift');
                 await page.keyboard.press('Enter');
