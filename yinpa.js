@@ -187,7 +187,6 @@ await STpage.exposeFunction('STmessageCallback', (Value) => {
     STpage.emit('STmessage', Value);
 });
 
-
 await DISpage.exposeFunction('DISmessageCallback', (Value) => {
     DISpage.emit('DISmessage', Value);
 });
@@ -213,10 +212,15 @@ async function cancelTimeout() {
         console.log("计时器已取消");
     }
 }
-
+let isProcessing = false;
 DISpage.on('DISmessage', async (Value) => {
     
         console.log("newValue",Value);
+
+        if (isProcessing) {
+            console.log("正在发送");
+           return;
+        }
 
         if(timeoutId!=""){
             console.log("还有时间");
@@ -252,12 +256,22 @@ DISpage.on('DISmessage', async (Value) => {
         }
 
         if(!SendTxt.includes("rp:")){
+            console.log("没有rp");
 
             return;
         }
         SendTxt=SendTxt.replace("rp:","");
 
         SendTxt="{"+Value["username"]+"}:"+SendTxt
+
+        if(sendMessage!=""){ //在处理
+
+            console.log("还在sengdmessage");
+
+            return;
+        }
+
+        sendMessage="true";
 
         let tixing="已收到消息请稍等大概一分钟";
 
@@ -308,10 +322,13 @@ DISpage.on('DISmessage', async (Value) => {
         const isVisible = await element.isVisible();
         console.log('元素是否可见:', isVisible);
         if(isVisible){
+
      
          await element.click();
      
         }else{
+
+            sendMessage="";
             return;
 
         }
@@ -354,6 +371,7 @@ DISpage.on('DISmessage', async (Value) => {
              console.error('输入消息时出错:', error);
            }
          }
+        sendMessage="";
         setTimeoutFunction(60000, async () => {
             await STpage.evaluate(() => {
                 // 创建并触发自定义事件
@@ -410,7 +428,7 @@ DISpage.on('DISmessage', async (Value) => {
 
 // 创建一个消息队列
 const messageQueue = [];
-let isProcessing = false;
+
 
 // 设置发送消息的间隔时间（毫秒）
 const MESSAGE_INTERVAL = 2000; // 每5秒发送一条消息，可以根据需要调整
@@ -418,7 +436,6 @@ const MESSAGE_INTERVAL = 2000; // 每5秒发送一条消息，可以根据需要
 STpage.on('STmessage', async (Value) => {
     console.log("newValue", Value);
     cancelTimeout();
-    sendMessage="true";
     const GetTxt = Value.text;
     
     // 将新消息添加到队列
@@ -576,6 +593,16 @@ STpage.on('valueChanged',async (newValue) => {
 
                                             newMesText = newMesText.slice(0, findLastCompletePosition(newMesText));
                                             const currentLength = newMesText.length;
+                                            if(!go_on){
+                                                let txt="\n发送完毕!有请下一轮发言!" ;
+
+                                                window.dispatchEvent(new CustomEvent('STmessage', {
+                                                    detail: { text: txt },
+                                                    bubbles: true,
+                                                    cancelable: true
+                                                }));
+                                            }    
+                                            
                                                 // 如果新增了字符，就发送新增的部分
                                                 if (currentLength > previousLength) {
                                                     // 获取新增的文本
@@ -586,10 +613,7 @@ STpage.on('valueChanged',async (newValue) => {
                                                     if (newTextToSend.trim() !== '') {
                                                         // 发送新文本
 
-                                                        if(!go_on){
-
-                                                            newTextToSend=newTextToSend+"\n发送完毕!有请下一轮发言!" 
-                                                        }
+                                                      
                                                         await new Promise(resolve => setTimeout(resolve, 1000));
                                                         window.dispatchEvent(new CustomEvent('STmessage', {
                                                             detail: { text: newTextToSend },
@@ -603,7 +627,7 @@ STpage.on('valueChanged',async (newValue) => {
                                                     }
                                                 }
                                             
-                                          await new Promise(resolve => setTimeout(resolve, 2000));
+                                        //  await new Promise(resolve => setTimeout(resolve, 2000));
                                             // 检查发送按钮是否可见
                                  
                                     
