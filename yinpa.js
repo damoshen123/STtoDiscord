@@ -287,7 +287,7 @@ DISpage.on('DISmessage', async (Value) => {
                 detail = "大成功";
             }
             SendTxt=SendTxt.replace("掷骰子",`，这个轮次玩家的骰子是:${roll},结果是${detail}。`)
-            tixing=tixing+`这个轮次玩家的骰子是:${roll},结果是${detail}`;
+            tixing=tixing+`这个轮次@${Value["username"]}的骰子是:${roll},结果是${detail}`;
         }
 
         
@@ -460,6 +460,7 @@ async function inputMessageInDiscord(page, message) {
         await page.keyboard.press('Backspace');
 
         const lines = message.split('\n');
+        await page.keyboard.press('PageDown');
 
         for (let i = 0; i < lines.length; i++) {
             await page.keyboard.type(lines[i], {delay: 1});
@@ -471,6 +472,7 @@ async function inputMessageInDiscord(page, message) {
         }
 
         await page.keyboard.press('Enter');
+        await page.keyboard.press('PageDown');
         
     } catch (error) {
         console.error('输入消息时出错:', error);
@@ -581,6 +583,11 @@ STpage.on('valueChanged',async (newValue) => {
                                                     // 检查新文本是否不为空
                                                     if (newTextToSend.trim() !== '') {
                                                         // 发送新文本
+
+                                                        if(!go_on){
+
+                                                            newTextToSend=newTextToSend+"\n发送完毕!有请下一轮发言!" 
+                                                        }
                                                         await new Promise(resolve => setTimeout(resolve, 1000));
                                                         window.dispatchEvent(new CustomEvent('STmessage', {
                                                             detail: { text: newTextToSend },
@@ -606,7 +613,7 @@ STpage.on('valueChanged',async (newValue) => {
                                             const finalTextToSend = finalText.slice(previousLength);
                                             if (finalTextToSend.trim() !== '') {
                                                 window.dispatchEvent(new CustomEvent('STmessage', {
-                                                    detail: { text: finalTextToSend },
+                                                    detail: { text: finalTextToSend+"\n发送完毕!有请下一轮发言!" },
                                                     bubbles: true,
                                                     cancelable: true
                                                 }));
