@@ -257,6 +257,10 @@ DISpage.on('DISmessage', async (Value) => {
         }
         SendTxt=SendTxt.replace("rp:","");
 
+        SendTxt="{"+Value["username"]+"}:"+SendTxt
+
+        SendTxt=SendTxt.replace("掷骰子","，这个轮次玩家的骰子是:{{roll:1d6}}")
+
         const send_textarea = STpage.locator('#send_textarea[name="text"]');
         // 使用 fill() 方法输入内容
         await send_textarea.fill(SendTxt);
