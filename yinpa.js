@@ -284,6 +284,8 @@ DISpage.on('DISmessage', async (Value) => {
 
             return;
         }
+
+        
         SendTxt=SendTxt.replace("rp:","");
 
         SendTxt="{"+Value["username"]+"}:"+SendTxt
@@ -296,6 +298,7 @@ DISpage.on('DISmessage', async (Value) => {
         }
 
         sendMessage="true";
+        stop=false;
 
         let tixing="已收到消息请稍等大概一分钟";
 
@@ -468,9 +471,6 @@ STpage.on('STmessage', async (Value) => {
     
     // 将新消息添加到队列
     messageQueue.push(GetTxt);
-    if(stop){
-        messageQueue=[];
-    }
     // 如果没有正在处理的消息，开始处理队列
     if (!isProcessing) {
         processQueue();
@@ -479,8 +479,8 @@ STpage.on('STmessage', async (Value) => {
 
 async function processQueue() {
     if(stop){
-        stop=false;
         messageQueue=[];
+        isProcessing=false;
         return;
     }
     if (messageQueue.length === 0) {
@@ -516,6 +516,11 @@ async function inputMessageInDiscord(page, message) {
         await page.keyboard.press('PageDown');
 
         for (let i = 0; i < lines.length; i++) {
+
+            if(stop){
+
+                return;
+            }
             await page.keyboard.type(lines[i], {delay: 1});
             await new Promise(resolve => setTimeout(resolve, 100));
             if (i < lines.length - 1) {
