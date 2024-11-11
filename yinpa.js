@@ -153,7 +153,7 @@ await STpage.evaluate(() => {
         const deleteButton = Array.from(document.querySelectorAll('.qr--button-label'))
         .find(el => el.textContent.trim() === '删除聊天1');
               
-         deleteButton.click();   
+         deleteButton.click();
          
          await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -213,26 +213,50 @@ async function cancelTimeout() {
     }
 }
 let isProcessing = false;
+
+// 创建一个消息队列
+let messageQueue = [];
+
 DISpage.on('DISmessage', async (Value) => {
     
         console.log("newValue",Value);
-
-        if (isProcessing) {
-            console.log("正在发送");
-           return;
-        }
-
-        if(timeoutId!=""){
-            console.log("还有时间");
-            return;
-        }
-
-        Value=JSON.parse(Value)
+        Value=JSON.parse(Value);
         SendTxt=Value["lastMesg"];
         console.log("SendTxt",SendTxt);
         if(SendTxt.includes("stop:")){
-            
+            isProcessing = true;
             stop=true;
+            cancelTimeout();
+            messageQueue=[];
+            sendMessage="";
+            const element = STpage.locator('#mes_stop');
+            // 检查元素是否存在
+            const isVisible = await element.isVisible();
+            console.log('元素是否可见:', isVisible);
+            if(isVisible){ 
+             await element.click();
+            }
+            messageQueue=[];
+            await STpage.evaluate(() => {
+                // 创建并触发自定义事件
+                const event = new CustomEvent('del');
+                window.dispatchEvent(event);
+
+            });
+            let stoptxt="已停止对话";
+            sendMessage="true";
+            await inputMessageInDiscord(DISpage,stoptxt);
+            sendMessage="";
+            isProcessing=false;
+            return;
+        }
+        
+        if (isProcessing) {
+            console.log("正在发送");
+            return;
+         }
+         if(timeoutId!=""){
+            console.log("还有时间");
             return;
         }
 
@@ -321,11 +345,9 @@ DISpage.on('DISmessage', async (Value) => {
         // 检查元素是否存在
         const isVisible = await element.isVisible();
         console.log('元素是否可见:', isVisible);
-        if(isVisible){
-
-     
+        if(isVisible){ 
          await element.click();
-     
+    
         }else{
 
             sendMessage="";
@@ -363,7 +385,6 @@ DISpage.on('DISmessage', async (Value) => {
                  await page.keyboard.up('Shift');
                }
              }
-         
              console.log('消息输入成功');
              await page.keyboard.press('Enter');
          
@@ -373,6 +394,14 @@ DISpage.on('DISmessage', async (Value) => {
          }
         sendMessage="";
         setTimeoutFunction(60000, async () => {
+            const stopelement = STpage.locator('#mes_stop');
+            // 检查元素是否存在
+            // 检查元素是否存在
+            const stopelementisVisible = await stopelement.isVisible();
+            console.log('元素是否可见:', stopelementisVisible);
+            if(stopelementisVisible){ 
+                 await stopelement.click();
+             } 
             await STpage.evaluate(() => {
                 // 创建并触发自定义事件
                 const event = new CustomEvent('del');
@@ -426,8 +455,7 @@ DISpage.on('DISmessage', async (Value) => {
 
 });
 
-// 创建一个消息队列
-const messageQueue = [];
+
 
 
 // 设置发送消息的间隔时间（毫秒）
@@ -440,7 +468,9 @@ STpage.on('STmessage', async (Value) => {
     
     // 将新消息添加到队列
     messageQueue.push(GetTxt);
-    
+    if(stop){
+        messageQueue=[];
+    }
     // 如果没有正在处理的消息，开始处理队列
     if (!isProcessing) {
         processQueue();
@@ -448,11 +478,15 @@ STpage.on('STmessage', async (Value) => {
 });
 
 async function processQueue() {
+    if(stop){
+        stop=false;
+        messageQueue=[];
+        return;
+    }
     if (messageQueue.length === 0) {
         isProcessing = false;
         return;
     }
-
     isProcessing = true;
     const message = messageQueue.shift(); // 获取队列中的第一条消息
 
@@ -472,6 +506,7 @@ async function inputMessageInDiscord(page, message) {
     try {
         const selector = 'div[role="textbox"][aria-label*="发送一则消息"]';
         await page.waitForSelector(selector, { state: 'visible', timeout: 5000 });
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         await page.click(selector);
         await page.keyboard.press('Control+A');
@@ -555,6 +590,14 @@ STpage.on('valueChanged',async (newValue) => {
                                         previousLength=0;
                                         await new Promise(resolve => setTimeout(resolve, 3000));
                                         let  newMesTextElement = document.querySelector('.mes.last_mes');
+                                        let is_user = newMesTextElement.getAttribute('is_user') === 'false';
+
+                                        if(!is_user){
+
+                                            return;
+                                            
+                                        }
+
                                         newMesTextElement=  newMesTextElement.querySelector('.mes_text')
 
                                         function findLastCompletePosition(text) {
@@ -583,6 +626,9 @@ STpage.on('valueChanged',async (newValue) => {
                                             }
                                             await new Promise(resolve => setTimeout(resolve, 2000));
                                             // 获取当前的文本内容
+                                            if(!(newMesTextElement && typeof newMesTextElement.textContent === 'string')){
+                                                return;
+                                            }
                                            
                                             let newMesText = newMesTextElement.textContent.trim();
                                             if (pass.split('|').some(phrase => newMesText.includes(phrase))) {
@@ -634,29 +680,33 @@ STpage.on('valueChanged',async (newValue) => {
                                             // 等待一小段时间再检查
                                           //  await new Promise(resolve => setTimeout(resolve, 1000));
                                         }
-                                        const finalText = newMesTextElement.textContent.trim()
-                                        if (finalText.length > previousLength) {
-                                            const finalTextToSend = finalText.slice(previousLength);
-                                            if (finalTextToSend.trim() !== '') {
-                                                window.dispatchEvent(new CustomEvent('STmessage', {
-                                                    detail: { text: finalTextToSend+"\n发送完毕!有请下一轮发言!" },
-                                                    bubbles: true,
-                                                    cancelable: true
-                                                }));
-                                                console.log("最后发送", finalTextToSend);
-                                            }
-                                        }
-
-
-
+                                        // const finalText = newMesTextElement.textContent.trim()
+                                        // if (finalText.length > previousLength) {
+                                        //     const finalTextToSend = finalText.slice(previousLength);
+                                        //     if (finalTextToSend.trim() !== '') {
+                                        //         window.dispatchEvent(new CustomEvent('STmessage', {
+                                        //             detail: { text: finalTextToSend},
+                                        //             bubbles: true,
+                                        //             cancelable: true
+                                        //         }));
+                                        //         console.log("最后发送", finalTextToSend);
+                                        //     }
+                                        // }
 
                                     }
 
                                     const chatElement = document.getElementById('chat');
-                                    const lastMes = chatElement.querySelector('.mes.last_mes');
+                                    const lastMes = chatElement.querySelector('.mes');
+
                                     if(lastMes){
-                                    idManager.addId(lastMes.getAttribute('timestamp'));
-                                     }
+
+                                        for(let i=0;i<lastMes.length;i++){
+
+                                            idManager.addId(lastMes[i].getAttribute('timestamp'));
+
+                                        }
+                                        
+                                    }
                                     
                                     // 辅助函数：检查元素是否可见
                                     function isElementVisible(element) {
@@ -818,7 +868,9 @@ STpage.on('valueChanged',async (newValue) => {
 
                                         if (lastMes) {
                                             let isUSER = lastMes.getAttribute('id') != lastid ;
-                                            isUSER= idManager.addId(lastMes.getAttribute('id'))&&isUSER       
+                                            isUSER= idManager.addId(lastMes.getAttribute('id'))&&isUSER 
+                                            console.log("lastid",lastMes.getAttribute('id'))
+      
     
                                             return { lastMes, isUSER };
                                         }
@@ -846,12 +898,29 @@ STpage.on('valueChanged',async (newValue) => {
                                                 console.log('是用户的消息');
                                                 // 在这里你可以执行任何需要的操作
                                                 console.log("lastMes",lastMes);
-                                                const users = lastMes.querySelectorAll('.username_f9f2ca');
+                                                let users = lastMes.querySelectorAll('.username_f9f2ca');
                                                 console.log("users",users);
 
                                                 if(!users||users.length==0){
+                                                    console.log("没有用户名开始寻找");
 
-                                                    return;
+                                                    let messageListItem = chatElement.querySelectorAll('.messageListItem_d5deea');
+                                                    console.log("messageListItem",messageListItem)
+                                                    for (let i = 1; i < messageListItem.length; i++) {
+
+                                                     let lastMes=messageListItem[messageListItem.length - i]
+                                                      users = lastMes.querySelectorAll('.username_f9f2ca');
+                                                        if(users&&users.length>0){
+
+                                                            break;
+                                                        }
+
+                                                        
+                                                
+     
+                                                    }
+                                                    
+                                                    console.log("user",users[users.length - 1].textContent.trim() );
 
                                                 }
 
