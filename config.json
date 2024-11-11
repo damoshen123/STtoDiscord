@@ -1,8 +1,9 @@
 {
     "STUrl":"http://192.168.10.5:8000",
-    "DISUrl":"https://discord.com/channels/1134557553011998840/1134601859844280471/threads/1301616298840555540",
+    "DISUrl":"https://discord.com/channels/1134557553011998840/1134717476505137215/threads/1304855556216979517",
     "wutou":false,
     "yourname":"小克",
-    "pass":"<推导>|<输出内容总结>"
+    "pass":"<推导>|<输出内容总结>",
+    "outTime":"60000"
   }
   

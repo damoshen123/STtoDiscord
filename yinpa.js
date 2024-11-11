@@ -393,7 +393,7 @@ DISpage.on('DISmessage', async (Value) => {
            }
          }
         sendMessage="";
-        setTimeoutFunction(60000, async () => {
+        setTimeoutFunction(config.outTime, async () => {
             const stopelement = STpage.locator('#mes_stop');
             // 检查元素是否存在
             // 检查元素是否存在
