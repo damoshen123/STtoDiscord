@@ -462,7 +462,7 @@ DISpage.on('DISmessage', async (Value) => {
 
 
 // 设置发送消息的间隔时间（毫秒）
-const MESSAGE_INTERVAL = 2000; // 每5秒发送一条消息，可以根据需要调整
+const MESSAGE_INTERVAL = 1000; // 每5秒发送一条消息，可以根据需要调整
 
 STpage.on('STmessage', async (Value) => {
     console.log("newValue", Value);
