@@ -606,7 +606,7 @@ STpage.on('valueChanged',async (newValue) => {
                                         newMesTextElement=  newMesTextElement.querySelector('.mes_text')
 
                                         function findLastCompletePosition(text) {
-                                            const punctuations = ['.', '!', '?', '。', '！', '？', '\n',';'];  // 可以根据需要添加更多符号
+                                            const punctuations = ['.', '!', '?', '。', '！', '？', '\n',';',"}","]",")"];  // 可以根据需要添加更多符号
                                             let lastPosition = -1;
                                         
                                             for (let punct of punctuations) {
