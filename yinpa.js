@@ -23,6 +23,109 @@ let DISpage = null;
 // Worker 的基础 URL
 
 
+class MemoryMonitor {
+    constructor(page) {
+        this.page = page;
+        this.warningThreshold = 200 * 1024 * 1024;  // 400MB 警告阈值
+        this.criticalThreshold = 400 * 1024 * 1024; // 500MB 临界阈值
+    }
+
+    async checkMemory() {
+        try {
+            const metrics = await this.page.evaluate(() => {
+                if (!performance.memory) return null;
+                return {
+                    usedJSHeapSize: performance.memory.usedJSHeapSize,
+                    totalJSHeapSize: performance.memory.totalJSHeapSize,
+                    jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+                };
+            });
+
+            if (!metrics) {
+                console.log('Memory metrics not available');
+                return null;
+            }
+
+            // 转换为MB便于阅读
+            const usedMB = Math.round(metrics.usedJSHeapSize / (1024 * 1024));
+            const totalMB = Math.round(metrics.totalJSHeapSize / (1024 * 1024));
+            const limitMB = Math.round(metrics.jsHeapSizeLimit / (1024 * 1024));
+
+            console.log(`Memory Usage: ${usedMB}MB / ${totalMB}MB (Limit: ${limitMB}MB)`);
+
+            // 内存使用超过警告阈值
+            if (metrics.usedJSHeapSize > this.warningThreshold) {
+                console.warn('High memory usage detected!');
+                await this.optimizeMemory();
+            }
+
+            // 内存使用超过临界值
+            if (metrics.usedJSHeapSize > this.criticalThreshold) {
+                console.error('Critical memory usage! Forcing garbage collection...');
+                await this.forceGC();
+            }
+
+            return metrics;
+        } catch (error) {
+            console.error('Error checking memory:', error);
+            return null;
+        }
+    }
+
+    async optimizeMemory() {
+        try {
+            await this.page.evaluate(() => {
+                // 清除控制台
+                console.clear();
+                
+                // 清除未使用的图片
+                const images = document.getElementsByTagName('img');
+                for (let img of images) {
+                    if (!img.isConnected) {
+                        img.src = '';
+                    }
+                }
+
+                // 清除未使用的变量
+                if (window.gc) {
+                    window.gc();
+                }
+            });
+        } catch (error) {
+            console.error('Error optimizing memory:', error);
+        }
+    }
+
+    async forceGC() {
+        try {
+            await this.page.evaluate(() => {
+                if (window.gc) {
+                    window.gc();
+                }
+            });
+        } catch (error) {
+            console.error('Error forcing GC:', error);
+        }
+    }
+}
+
+async function setupMemoryMonitoring(page) {
+    const monitor = new MemoryMonitor(page);
+    
+    // 定期检查内存（每5分钟）
+    setInterval(async () => {
+        await monitor.checkMemory();
+    }, 1 * 60 * 1000);
+
+    // 返回monitor实例以便手动调用
+    return monitor;
+}
+
+// 初始化监控
+let memoryMonitor;
+// 初始化监控
+let memoryMonitor2;
+
 async function initializeBrowser() {
 
 
@@ -42,6 +145,10 @@ async function initializeBrowser() {
         // 创建页面
         STpage = await STcontext.newPage();
         DISpage = await DIScontext.newPage();
+
+
+        memoryMonitor = await setupMemoryMonitoring(STpage);
+        memoryMonitor2 = await setupMemoryMonitoring(DISpage);
         console.log("启动浏览器完成");
         // 添加全局错误处理
         process.on('uncaughtException', (error) => {
